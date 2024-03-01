@@ -19,9 +19,9 @@ websocket_client::websocket_client(client_callback_t *callback,
                                    bool use_global_service)
         : callback_(callback), service_(use_global_service
                                         ? socket_service::global(ca_file_path, cpu_affinity) : new socket_service(
-                std::move(ca_file_path), cpu_affinity)), url_(std::move(url)), headers_map_(std::move(headers_map)), origin_(std::move(origin)) {
+                std::move(ca_file_path), cpu_affinity)), url_(std::move(url)), origin_(std::move(origin)) {
 
-    std::cout << "URL:" << url_ << ", " << headers_map_.size() << " headers" << std::endl;
+    std::cout << "URL:" << url_ << ", " << headers_map.size() << " headers" << std::endl;
     std::string protoco("wss");
     auto pos = url_.find("://");
     if (pos == std::string::npos) {
@@ -55,6 +55,10 @@ websocket_client::websocket_client(client_callback_t *callback,
     if (port_ == -1) {
         port_ = (protoco == "ws") ? 80 : 443;
     }
+
+    user_data_ = new websocket_opaque_user_data();
+    user_data_->headers_map = std::move(headers_map);
+
     std::cout << "Connecting to port " << port_ << ", address " << address_ << ", path " << path_ << std::endl;
 }
 
@@ -62,6 +66,10 @@ websocket_client::~websocket_client() noexcept {
     if (service_ && !service_->is_global()) {
         delete service_;
         service_ = nullptr;
+    }
+    if (user_data_) {
+        delete user_data_;
+        user_data_ = nullptr;
     }
     stop();
 }
@@ -93,21 +101,12 @@ bool websocket_client::connect() noexcept {
         request_->cci.ssl_connection = LCCSCF_USE_SSL | LCCSCF_PRIORITIZE_READS;
     }
 
+    request_->cci.opaque_user_data = user_data_;
+
     auto &socket_info = request_->socket_info;
     socket_info.callback = callback_;
     socket_info.sending_buffer.reset();
     socket_info.shutdown.store(false, std::memory_order_relaxed);
-
-    if (request_->http_info.request) {
-        for (auto const& [key, value] : headers_map_) {
-            request_->http_info.request->add_header(key, value);
-            std::cout << "Added header " << key << ": "<< value << std::endl;
-        }
-        std::cout << "all headers added" << std::endl;
-    }
-    else {
-        std::cout << "Request structure not yet initiaized" << std::endl;
-    }
 
     service_->request(request_);
     return true;
@@ -217,6 +216,29 @@ int ws_callback(struct lws *wsi, enum lws_callback_reasons reason, void *user, v
             lwsl_user("******* LWS_CALLBACK_EVENT_WAIT_CANCELLED\n");
             break;
 
+        case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER: {
+            unsigned char **p = (unsigned char **)in, *end = (*p) + len;
+            websocket_opaque_user_data* user_data = (websocket_opaque_user_data*)lws_get_opaque_user_data(wsi);
+            for (auto const& [key, value] : user_data->headers_map) {
+                // Note: Convert std::string to unsigned char* and calculate the actual length
+                unsigned char *key_uc = (unsigned char*)key.c_str();
+                unsigned char *value_uc = (unsigned char*)value.c_str();
+                size_t length = value.length();
+                if (lws_add_http_header_by_name(wsi,
+                                                key_uc,
+                                                value_uc,
+                                                length, 
+                                                p, 
+                                                end)) {
+                    return -1;
+                }
+                else {
+                    std::cout << "Added header " << key << ": "<< value << std::endl;
+                }
+            }
+            std::cout << "all headers added" << std::endl;
+            break;
+        }
         default:
             return lws_callback_http_dummy(wsi, reason, user, in, len);
     }

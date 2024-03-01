@@ -15,12 +15,17 @@ class socket_service;
 
 class client_callback_t;
 
+struct websocket_opaque_user_data {
+    std::map<std::string, std::string> headers_map;
+    // Add other fields if necessary
+};
+
 class websocket_client {
     client_callback_t *callback_;
     request_info *request_ = nullptr;
     socket_service *service_ = nullptr;
     std::string url_;
-    std::map<std::string, std::string> headers_map_;
+    websocket_opaque_user_data *user_data_ = nullptr;
     std::string address_;
     std::string origin_;
     std::string path_;
