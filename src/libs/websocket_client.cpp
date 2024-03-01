@@ -6,18 +6,22 @@
 #include "callback.h"
 #include <atomic>
 #include <array>
+#include <iostream>
 #include "socket_service.h"
+#include "http_client.h"
 
 websocket_client::websocket_client(client_callback_t *callback,
                                    std::string url,
+                                   std::map<std::string, std::string> headers_map,
                                    std::string origin,
                                    std::string ca_file_path,
                                    int32_t cpu_affinity,
                                    bool use_global_service)
         : callback_(callback), service_(use_global_service
                                         ? socket_service::global(ca_file_path, cpu_affinity) : new socket_service(
-                std::move(ca_file_path), cpu_affinity)), url_(std::move(url)), origin_(std::move(origin)) {
+                std::move(ca_file_path), cpu_affinity)), url_(std::move(url)), headers_map_(std::move(headers_map)), origin_(std::move(origin)) {
 
+    std::cout << "URL:" << url_ << ", " << headers_map_.size() << " headers" << std::endl;
     std::string protoco("wss");
     auto pos = url_.find("://");
     if (pos == std::string::npos) {
@@ -51,7 +55,7 @@ websocket_client::websocket_client(client_callback_t *callback,
     if (port_ == -1) {
         port_ = (protoco == "ws") ? 80 : 443;
     }
-
+    std::cout << "Connecting to port " << port_ << ", address " << address_ << ", path " << path_ << std::endl;
 }
 
 websocket_client::~websocket_client() noexcept {
@@ -93,6 +97,18 @@ bool websocket_client::connect() noexcept {
     socket_info.callback = callback_;
     socket_info.sending_buffer.reset();
     socket_info.shutdown.store(false, std::memory_order_relaxed);
+
+    if (request_->http_info.request) {
+        for (auto const& [key, value] : headers_map_) {
+            request_->http_info.request->add_header(key, value);
+            std::cout << "Added header " << key << ": "<< value << std::endl;
+        }
+        std::cout << "all headers added" << std::endl;
+    }
+    else {
+        std::cout << "Request structure not yet initiaized" << std::endl;
+    }
+
     service_->request(request_);
     return true;
 }

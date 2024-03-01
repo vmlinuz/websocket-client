@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <string>
 #include <memory>
+#include <map>
 
 struct request_info;
 
@@ -19,6 +20,7 @@ class websocket_client {
     request_info *request_ = nullptr;
     socket_service *service_ = nullptr;
     std::string url_;
+    std::map<std::string, std::string> headers_map_;
     std::string address_;
     std::string origin_;
     std::string path_;
@@ -27,6 +29,7 @@ class websocket_client {
 public:
     websocket_client(client_callback_t *callback,
                      std::string url_,
+                     std::map<std::string, std::string> headers_map = std::map<std::string, std::string>(),
                      std::string origin = "",
                      std::string ca_file_path = "",
                      int32_t cpu_affinity = -1,
