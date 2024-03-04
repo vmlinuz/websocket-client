@@ -101,6 +101,11 @@ bool websocket_client::connect() noexcept {
         request_->cci.ssl_connection = LCCSCF_USE_SSL | LCCSCF_PRIORITIZE_READS;
     }
 
+    auto& headers_map = user_data_->headers_map;
+    if (headers_map.count("Sec-WebSocket-Protocol") != 0) {
+        request_->cci.protocol = headers_map["Sec-WebSocket-Protocol"].c_str();
+    }
+
     request_->cci.opaque_user_data = user_data_;
 
     auto &socket_info = request_->socket_info;
@@ -220,6 +225,10 @@ int ws_callback(struct lws *wsi, enum lws_callback_reasons reason, void *user, v
             unsigned char **p = (unsigned char **)in, *end = (*p) + len;
             websocket_opaque_user_data* user_data = (websocket_opaque_user_data*)lws_get_opaque_user_data(wsi);
             for (auto const& [key, value] : user_data->headers_map) {
+                if (key == "Sec-WebSocket-Protocol") {
+                    // already added a protocol in the websocket_client::connect(), no need to add it here
+                    continue;
+                }
                 // Note: Convert std::string to unsigned char* and calculate the actual length
                 unsigned char *key_uc = (unsigned char*)key.c_str();
                 unsigned char *value_uc = (unsigned char*)value.c_str();
