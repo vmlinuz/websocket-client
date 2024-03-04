@@ -107,6 +107,7 @@ bool websocket_client::connect() noexcept {
     }
 
     request_->cci.opaque_user_data = user_data_;
+    request_->cci.allow_reserved_bits = 1;
 
     auto &socket_info = request_->socket_info;
     socket_info.callback = callback_;
