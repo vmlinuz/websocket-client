@@ -61,6 +61,15 @@ socket_service::socket_service(std::string ca_file_path, int32_t cpu_affinity, b
         : request_pool_(QUEUE_SIZE), request_queue_(QUEUE_SIZE), ca_file_path_(std::move(ca_file_path)),
           is_global_(is_global) {
 
+    static const struct lws_extension extensions[] = {
+        {
+            "permessage-deflate",
+            lws_extension_callback_pm_deflate,
+            "permessage-deflate; client_max_window_bits"
+        },
+        { nullptr, nullptr, nullptr } // Terminate the list.
+    };
+
     lws_context_creation_info context_info{};
     memset(&context_info, 0, sizeof(context_info));
 
@@ -70,6 +79,7 @@ socket_service::socket_service(std::string ca_file_path, int32_t cpu_affinity, b
     context_info.ka_time = 5;
     context_info.ka_probes = 5;
     context_info.ka_interval = 1;
+    context_info.extensions = extensions;
 
     if (!ca_file_path_.empty()) {
         context_info.client_ssl_ca_filepath = ca_file_path_.c_str();

@@ -18,8 +18,7 @@ set(LIB_PREFIX "/usr/lib")
 
 find_package(Threads REQUIRED)
 
-find_package(Libwebsockets)
-set(WEBSOCKET_LIB "${LIB_PREFIX}/libwebsockets.so")
+find_package(Libwebsockets REQUIRED)
 
 find_package(OpenSSL REQUIRED)
 
@@ -39,7 +38,7 @@ set (LIBS
 add_library(websocket_client ${LIBS})
 
 target_link_libraries(websocket_client
-        ${WEBSOCKET_LIB}
+        ${LIBWEBSOCKETS_LIBRARIES}
         ${OPENSSL_LIBRARIES}
         ${CMAKE_THREAD_LIBS_INIT}
 )
