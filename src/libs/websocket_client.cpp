@@ -7,6 +7,7 @@
 #include <atomic>
 #include <array>
 #include <iostream>
+#include <lws_config.h>
 #include "socket_service.h"
 #include "http_client.h"
 
@@ -98,7 +99,11 @@ bool websocket_client::connect() noexcept {
 
     if (port_ == 443) {
         request_->cci.protocol = "wss";
-        request_->cci.ssl_connection = LCCSCF_USE_SSL | LCCSCF_PRIORITIZE_READS;
+#ifdef LCCSCF_PRIORITIZE_READS
+		request_->cci.ssl_connection = LCCSCF_USE_SSL | LCCSCF_PRIORITIZE_READS;
+#else
+		request_->cci.ssl_connection = LCCSCF_USE_SSL;
+#endif
     }
 
     auto& headers_map = user_data_->headers_map;
@@ -107,7 +112,12 @@ bool websocket_client::connect() noexcept {
     }
 
     request_->cci.opaque_user_data = user_data_;
-    request_->cci.allow_reserved_bits = 1;
+	
+#ifdef LWS_ROLE_WS
+#if LWS_LIBRARY_VERSION_NUMBER > 4003003
+	request_->cci.allow_reserved_bits = 1;
+#endif
+#endif
 
     auto &socket_info = request_->socket_info;
     socket_info.callback = callback_;
