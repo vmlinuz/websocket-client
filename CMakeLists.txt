@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 project(websocket-client)
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
-    add_definitions(-DDEBUG=1)
+    add_definitions(-DDEBUG=1 -O0)
 else ()
     add_definitions(-DDEBUG=0)
 endif()
@@ -40,14 +40,12 @@ set (LIBS
 	src/libs/websocket_client.cpp)
 
 add_library(websocket_client ${LIBS})
-target_include_directories(websocket_client PRIVATE C:/Linaro/gcc-linaro-7.4.1-2019.02-i686-mingw32_aarch64-linux-gnu/aarch64-linux-gnu/sysroot/usr/include)
 target_link_libraries(websocket_client
 	${LIBWEBSOCKETS_LIBRARIES}
 	${CMAKE_THREAD_LIBS_INIT}
 )
 
 add_executable(websocket-client main.cpp)
-target_include_directories(websocket-client PRIVATE C:/Linaro/gcc-linaro-7.4.1-2019.02-i686-mingw32_aarch64-linux-gnu/aarch64-linux-gnu/sysroot/usr/include ${ZLIB_INCLUDE_DIR})
 target_link_libraries(websocket-client
 	websocket_client
 	${OPENSSL_LIBRARIES}
