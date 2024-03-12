@@ -1,6 +1,5 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 project(websocket-client)
-set(CMAKE_VERBOSE_MAKEFILE ON)
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     add_definitions(-DDEBUG=1)
@@ -14,6 +13,9 @@ else()
     add_definitions(-D_WIN32_WINNT=0x600)
 endif()
 
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+
 set(LIB_PREFIX "/usr/lib")
 
 find_package(Threads REQUIRED)
@@ -22,29 +24,32 @@ find_package(Libwebsockets REQUIRED)
 
 find_package(OpenSSL REQUIRED)
 
+find_package(ZLIB REQUIRED)
+
 set (LIBS
-        src/libs/callback.h
-        src/libs/http_client.h
-        src/libs/http_client.cpp
-        src/libs/ring_buffer.h
-        src/libs/socket_client.h
-        src/libs/socket_client.cpp
-        src/libs/socket_service.h
-        src/libs/socket_service.cpp
-        src/libs/utils.h
-        src/libs/websocket_client.h
-        src/libs/websocket_client.cpp)
+	src/libs/callback.h
+	src/libs/http_client.h
+	src/libs/http_client.cpp
+	src/libs/ring_buffer.h
+	src/libs/socket_client.h
+	src/libs/socket_client.cpp
+	src/libs/socket_service.h
+	src/libs/socket_service.cpp
+	src/libs/utils.h
+	src/libs/websocket_client.h
+	src/libs/websocket_client.cpp)
 
 add_library(websocket_client ${LIBS})
-
+target_include_directories(websocket_client PRIVATE C:/Linaro/gcc-linaro-7.4.1-2019.02-i686-mingw32_aarch64-linux-gnu/aarch64-linux-gnu/sysroot/usr/include)
 target_link_libraries(websocket_client
-        ${LIBWEBSOCKETS_LIBRARIES}
-        ${OPENSSL_LIBRARIES}
-        ${CMAKE_THREAD_LIBS_INIT}
+	${LIBWEBSOCKETS_LIBRARIES}
+	${CMAKE_THREAD_LIBS_INIT}
 )
 
 add_executable(websocket-client main.cpp)
-
+target_include_directories(websocket-client PRIVATE C:/Linaro/gcc-linaro-7.4.1-2019.02-i686-mingw32_aarch64-linux-gnu/aarch64-linux-gnu/sysroot/usr/include ${ZLIB_INCLUDE_DIR})
 target_link_libraries(websocket-client
-       websocket_client
+	websocket_client
+	${OPENSSL_LIBRARIES}
+	${ZLIB_LIBRARY}
 )
