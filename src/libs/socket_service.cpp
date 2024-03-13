@@ -22,6 +22,7 @@ extern int raw_socket_callback(struct lws *wsi, enum lws_callback_reasons reason
 namespace {
 
     const struct lws_protocols s_protocols[] = {
+            {"ocpp1.6",    ws_callback,         0, 0},
             {"ws",         ws_callback,         0, 0},
             {"http",       http_callback,       0, 0},
             {"raw_socket", raw_socket_callback, 0, 0},
